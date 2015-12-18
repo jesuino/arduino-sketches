@@ -3,6 +3,7 @@
  */
 // other consts
 const int TOTAL_LEDS = 9;
+const int DELAY_POS = TOTAL_LEDS;
 // PINS
 const int LED_PINS[TOTAL_LEDS] = {13, 12, 11, 10, 9, 8, 7, 6, 5};
 const int MIC_PIN = A0;
@@ -14,17 +15,17 @@ const int SET_MODE_PIN = 4;
 // Animation constants
 const char ANIM_SEPARATOR = ',';
 const char ANIM_ENDING = ';';
-//const String DEFAULT_ANIMATION = "110000000,001100000,000011000,000000110,000000001,000000110,000011000,001100000,110000000,000000000,111111111,000000000,111111111;";
-const String DEFAULT_ANIMATION = "100000000,001000000,000010000,000010000,000000100,000000001,000000010,000001000,000100000,010000000,000000000,111111111;";
+const String DEFAULT_ANIMATION = "1111111114,0000000002,1000000000,0100000000,001000000,0001000000,0000100000,0000010000,0000001000,0000000100,0000000010,"
+                                 "0000000001,0000000010,0000000100,000001000,0000010000,0000100000,0001000000,0010000000,0100000000,1000000000,0000000002;";
 
 /*
  * Globals
  */
-int ledQueue[TOTAL_LEDS];
+ // + 1 for an position with the delay
+int ledQueue[TOTAL_LEDS + 1];
 
 // variables for sound input
-int mx = 0; 
-int val = 0;
+int mx = 0;
 int maxValue = 1024;
 bool automatic = true;
 // variables for automatic playing
@@ -49,8 +50,6 @@ void loop() {
   checkAndSetMode(); 
   cleanQueue();
   if(automatic) {
-    // TODO: read from serial to see if there's any animation, parse and set as the current animation
-//    currentAnimation = DEFAULT_ANIMATION;
       loadAnimation(animationInfo);
   } else {
     collectAudioValues();
@@ -77,10 +76,10 @@ void checkAndSetMode() {
   }
   // if we just changed to automatic, we must read the serial input to load a new animation
   if( automatic && changedMode) {
-    // TODO: 
+    // TODO: READ FROM SERIAL AT THIS POINT - the string should be read and validated
     digitalWrite(AUTO_MODE_PIN , HIGH);
     digitalWrite(SOUND_MODE_PIN , HIGH);
-    delay(10000);
+ //   delay(10000);
   }
 }
 
@@ -106,6 +105,15 @@ void loadAnimation(String animationStr) {
     if(animationStr.charAt(j + i) == '1') {
       ledQueue[i] = HIGH;
     }
+  }
+  // gets the delay for this queue if available
+  char possibleDelay = animationStr.charAt(j + TOTAL_LEDS);
+  if(isDigit(possibleDelay)) {
+    String delayStr = "";
+    delayStr += possibleDelay;
+    ledQueue[DELAY_POS] = delayStr.toInt();
+  } else {
+    ledQueue[DELAY_POS] = 0;
   }
 }
 
@@ -137,7 +145,7 @@ void collectAudioValues() {
   mx = 0;        // mx only increases
   // Perform 10000 reads. Update mn and mx for each one.
   for (int i = 0; i < 100; ++i) {
-    val = analogRead(MIC_PIN);
+    int val = analogRead(MIC_PIN);
     mx = max(mx, val);
   }
   // end
@@ -152,8 +160,9 @@ void updateLeds() {
     digitalWrite(LED_PINS[i], ledQueue[i]);
    }  
    if(automatic) {
-    int animationDelay = analogRead(SPEED_ADJUST_PIN) / 4;
-    delay(animationDelay);
+    int delayInput = analogRead(SPEED_ADJUST_PIN) / 4;
+    int queueDelay = ledQueue[DELAY_POS] * 300;
+    delay(delayInput + queueDelay);
    }
  }
  
