@@ -15,8 +15,7 @@ const int SET_MODE_PIN = 4;
 // Animation constants
 const char ANIM_SEPARATOR = ',';
 const char ANIM_ENDING = ';';
-const String DEFAULT_ANIMATION = "1111111114,0000000002,1000000000,0100000000,001000000,0001000000,0000100000,0000010000,0000001000,0000000100,0000000010,"
-                                 "0000000001,0000000010,0000000100,000001000,0000010000,0000100000,0001000000,0010000000,0100000000,1000000000,0000000002;";
+const String DEFAULT_ANIMATION = "1111111110,0111111100,0011111000,0001110000,0000100000,0000000000,0001110000,0011111000,0111111100;";
 
 /*
  * Globals
@@ -86,21 +85,20 @@ void checkAndSetMode() {
 void loadAnimation(String animationStr) {
   int i = 0;
   int j = 0;
-  char currentChar;
-  do {
-    if(i == animationStep) break;
+  char currentChar = ' ';
+   do {
+    if(currentChar == ANIM_ENDING) {
+      animationStep = 0;
+      j = 0;
+      break;
+    }
     currentChar = animationStr.charAt(j);
     if(currentChar == ANIM_SEPARATOR) {
       i++;
     }   
     j++; 
-  } while(currentChar != ANIM_ENDING);
-   
-  if(animationStep > i) { 
-    animationStep = 0;
-  } else {
-    animationStep++;
-  }
+  } while(i < animationStep);
+  animationStep++;
   for(i = 0; i < TOTAL_LEDS; i++) {
     if(animationStr.charAt(j + i) == '1') {
       ledQueue[i] = HIGH;
